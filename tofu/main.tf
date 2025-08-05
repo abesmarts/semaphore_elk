@@ -9,7 +9,6 @@ terraform {
 
 provider "docker" {}
 
-# Build Docker image from Dockerfile
 resource "docker_image" "custom_ubuntu" {
   name = "custom_ubuntu:latest"
 
@@ -19,7 +18,6 @@ resource "docker_image" "custom_ubuntu" {
   }
 }
 
-# Create the container
 resource "docker_container" "ubuntu_container" {
   name  = "ubuntu_monitor"
   image = docker_image.custom_ubuntu.name
@@ -29,15 +27,22 @@ resource "docker_container" "ubuntu_container" {
     external = 2222
   }
 
-  volumes = [
-    "${abspath("../filebeat/filebeat.yml")}:/etc/filebeat/filebeat.yml",
-    "${abspath("../python-scripts")}:/opt/python-scripts"
-  ]
+  mounts {
+    target    = "/etc/filebeat/filebeat.yml"
+    source    = abspath("../filebeat/filebeat.yml")
+    type      = "bind"
+    read_only = true
+  }
+
+  mounts {
+    target = "/opt/python-scripts"
+    source = abspath("../python-scripts")
+    type   = "bind"
+  }
 
   command = ["/usr/sbin/sshd", "-D"]
 }
 
-# Output connection details
 output "ssh_connection_command" {
   value = "ssh root@localhost -p 2222"
 }
