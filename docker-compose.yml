@@ -18,6 +18,7 @@ services:
       - semaphore_logs:/var/log/semaphore  # Mount logs for logstash
       - ./tofu:/mnt/tofu:rw 
       - ./ansible:/mnt/ansible:rw
+      - ./docker:/mnt/docker:ro
     logging:
       driver: "json-file"
       options:
