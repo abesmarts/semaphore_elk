@@ -9,8 +9,8 @@ services:
       SEMAPHORE_ADMIN_PASSWORD: changeme
       SEMAPHORE_ADMIN_NAME: Admin
       SEMAPHORE_ADMIN_EMAIL: admin@localhost
-      SEMAPHORE_USE_REMOTE_RUNNER: "False"
-      SEMAPHORE_RUNNER_REGISTRATION_TOKEN: "3kCEEVhCqLV0v8Q2pY5JOFpGQnsLs+ht/d5v1heF+ZQ="
+      #SEMAPHORE_USE_REMOTE_RUNNER: "False"
+      #SEMAPHORE_RUNNER_REGISTRATION_TOKEN: "3kCEEVhCqLV0v8Q2pY5JOFpGQnsLs+ht/d5v1heF+ZQ="
     volumes:
       - semaphore_data:/var/lib/semaphore
       - semaphore_config:/etc/semaphore
