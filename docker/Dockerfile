@@ -18,7 +18,6 @@ RUN mkdir -p /var/run/sshd /root/Desktop /var/log /opt/python-scripts && \
     echo "root:tofuadmin" | chpasswd && \
     sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
-COPY ../python-scripts /opt/python-scripts
 
 
 RUN pip3 install --no-cache-dir -r /opt/python-scripts/requirements.txt
