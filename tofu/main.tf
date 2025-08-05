@@ -18,27 +18,25 @@ resource "docker_image" "custom_ubuntu" {
   }
 }
 
-# Create container from custom image
+# Create the container
 resource "docker_container" "ubuntu_container" {
-  name  = "ubuntu_ansible_ready"
+  name  = "ubuntu_monitor"
   image = docker_image.custom_ubuntu.name
-  tty   = true
 
   ports {
     internal = 22
     external = 2222
   }
+
   volumes = [
     "${abspath("../filebeat/filebeat.yml")}:/etc/filebeat/filebeat.yml",
     "${abspath("../python-scripts")}:/opt/python-scripts"
   ]
-  
-  # Optional: auto-remove stopped container (uncomment if needed)
-  # must_run = false
-  # restart = "no"
+
+  command = ["/usr/sbin/sshd", "-D"]
 }
 
-# Optional output to display SSH connection info
+# Optional: Output connection details
 output "ssh_connection_command" {
   value = "ssh root@localhost -p 2222"
 }
