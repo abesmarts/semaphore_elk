@@ -28,6 +28,12 @@ RUN mkdir /var/run/sshd && \
 # Create Desktop folder for root user
 RUN mkdir -p /root/Desktop
 
+# Create app/log folders
+RUN mkdir -p /opt/python-scripts /etc/filebeat
+
+# Copy Filebeat binary (installed by Semaphore block)
+COPY ../filebeat/filebeat.yml /etc/filebeat/filebeat.yml
+
 # Install Google Chrome
 RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O /tmp/chrome.deb && \
     apt-get update && \
@@ -41,6 +47,9 @@ RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+') && \
     unzip /tmp/chromedriver.zip -d /root/Desktop && \
     chmod +x /root/Desktop/chromedriver && \
     rm /tmp/chromedriver.zip
+
+
+
 
 # Expose SSH port
 EXPOSE 22
