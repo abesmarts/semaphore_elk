@@ -12,8 +12,9 @@ provider "docker" {}
 # Build Docker image from Dockerfile
 resource "docker_image" "custom_ubuntu" {
   name = "custom_ubuntu:latest"
+
   build {
-    context    = "${abspath("../docker")}
+    context    = abspath("../docker")
     dockerfile = "Dockerfile"
   }
 }
@@ -36,7 +37,7 @@ resource "docker_container" "ubuntu_container" {
   command = ["/usr/sbin/sshd", "-D"]
 }
 
-# Optional: Output connection details
+# Output connection details
 output "ssh_connection_command" {
   value = "ssh root@localhost -p 2222"
 }
