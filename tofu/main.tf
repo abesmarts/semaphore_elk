@@ -21,7 +21,7 @@ resource "docker_image" "custom_ubuntu" {
 # Create container from custom image
 resource "docker_container" "ubuntu_container" {
   name  = "ubuntu_ansible_ready"
-  image = docker_image.custom_ubuntu.latest
+  image = docker_image.custom_ubuntu.name
   tty   = true
 
   ports {
