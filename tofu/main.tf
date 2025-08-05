@@ -28,16 +28,11 @@ resource "docker_container" "ubuntu_container" {
     internal = 22
     external = 2222
   }
-  volumes {
-    host_path      = "${abspath("../python-scripts")}
-    container_path = "/opt/python-scripts"
-  }
-
-  volumes {
-    host_path      = "${abspath("../filebeat/filebeat.yml")}
-    container_path = "/etc/filebeat/filebeat.yml"
-    read_only      = true
-  }
+  volumes = [
+    "${abspath("../filebeat/filebeat.yml")}:/etc/filebeat/filebeat.yml",
+    "${abspath("../python-scripts")}:/opt/python-scripts"
+  ]
+  
   # Optional: auto-remove stopped container (uncomment if needed)
   # must_run = false
   # restart = "no"
