@@ -16,6 +16,7 @@ services:
       - semaphore_config:/etc/semaphore
       - semaphore_tmp:/tmp/semaphore
       - semaphore_logs:/var/log/semaphore  # Mount logs for logstash
+      - /var/run/docker.sock:/var/run/docker.sock
       - ./tofu:/mnt/tofu:rw 
       - ./ansible:/mnt/ansible:rw
       - ./docker:/mnt/docker:ro
