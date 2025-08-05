@@ -1,4 +1,14 @@
+terraform {
+  required_providers {
+    docker = {
+      source  = "hashicorp/docker"
+      version = "~> 3.0"
+    }
+  }
+}
+
 provider "docker" {}
+
 
 # Build the Docker image from Dockerfile
 resource "docker_image" "custom_ubuntu" {
