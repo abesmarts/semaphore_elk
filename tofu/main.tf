@@ -13,7 +13,7 @@ provider "docker" {}
 resource "docker_image" "custom_ubuntu" {
   name = "custom_ubuntu:latest"
   build {
-    context    = "${path.module}/../docker"
+    context    = "../docker"
     dockerfile = "Dockerfile"
   }
 }
@@ -29,12 +29,12 @@ resource "docker_container" "ubuntu_container" {
     external = 2222
   }
   volumes {
-    host_path      = "${path.module}/../python-scripts"
+    host_path      = "../python-scripts"
     container_path = "/opt/python-scripts"
   }
 
   volumes {
-    host_path      = "${path.module}/../filebeat/filebeat.yml"
+    host_path      = "../filebeat/filebeat.yml"
     container_path = "/etc/filebeat/filebeat.yml"
     read_only      = true
   }
