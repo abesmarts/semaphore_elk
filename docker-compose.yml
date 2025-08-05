@@ -16,6 +16,8 @@ services:
       - semaphore_config:/etc/semaphore
       - semaphore_tmp:/tmp/semaphore
       - semaphore_logs:/var/log/semaphore  # Mount logs for logstash
+      - ./tofu:/mnt/tofu:rw 
+      - ./ansible:/mnt/ansible:rw
     logging:
       driver: "json-file"
       options:
