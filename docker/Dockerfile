@@ -38,7 +38,4 @@ RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+') && \
     rm /tmp/chromedriver.zip
 
 
-COPY ../filebeat/filebeat.yml /etc/filebeat/filebeat.yml
-
-
 CMD ["/usr/sbin/sshd", "-D"]
