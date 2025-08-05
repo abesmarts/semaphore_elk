@@ -1,49 +1,33 @@
-terraform {
-  required_providers {
-    docker = {
-      source  = "kreuzwerker/docker"
-      version = "~> 3.0"
-    }
-  }
-}
-
 provider "docker" {}
 
-# Build Docker image from Dockerfile
+# Build the Docker image from Dockerfile
 resource "docker_image" "custom_ubuntu" {
-  name = "custom_ubuntu:latest"
+  name         = "custom-ubuntu:latest"
   build {
-    context    = "../docker"
+    context    = abspath("../docker")
     dockerfile = "Dockerfile"
   }
 }
 
-# Create container from custom image
+# Create the container
 resource "docker_container" "ubuntu_container" {
-  name  = "ubuntu_ansible_ready"
+  name  = "ubuntu_monitor"
   image = docker_image.custom_ubuntu.name
-  tty   = true
 
   ports {
     internal = 22
     external = 2222
   }
-  volumes {
-    host_path      = "../python-scripts"
-    container_path = "/opt/python-scripts"
-  }
 
-  volumes {
-    host_path      = "../filebeat/filebeat.yml"
-    container_path = "/etc/filebeat/filebeat.yml"
-    read_only      = true
-  }
-  # Optional: auto-remove stopped container (uncomment if needed)
-  # must_run = false
-  # restart = "no"
+  volumes = [
+    "${abspath("../filebeat/filebeat.yml")}:/etc/filebeat/filebeat.yml",
+    "${abspath("../python-scripts")}:/opt/python-scripts"
+  ]
+
+  command = ["/usr/sbin/sshd", "-D"]
 }
 
-# Optional output to display SSH connection info
+
 output "ssh_connection_command" {
   value = "ssh root@localhost -p 2222"
 }
