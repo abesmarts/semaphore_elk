@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     docker = {
-      source  = "hashicorp/docker"
+      source  = "kreuzwerker/docker"
       version = "~> 3.0"
     }
   }
@@ -9,35 +9,41 @@ terraform {
 
 provider "docker" {}
 
-
-# Build the Docker image from Dockerfile
+# Build Docker image from Dockerfile
 resource "docker_image" "custom_ubuntu" {
-  name         = "custom-ubuntu:latest"
+  name = "custom_ubuntu:latest"
   build {
-    context    = abspath("../docker")
+    context    = "${abspath("../docker")}
     dockerfile = "Dockerfile"
   }
 }
 
-# Create the container
+# Create container from custom image
 resource "docker_container" "ubuntu_container" {
-  name  = "ubuntu_monitor"
+  name  = "ubuntu_ansible_ready"
   image = docker_image.custom_ubuntu.name
+  tty   = true
 
   ports {
     internal = 22
     external = 2222
   }
+  volumes {
+    host_path      = "${abspath("../python-scripts")}
+    container_path = "/opt/python-scripts"
+  }
 
-  volumes = [
-    "${abspath("../filebeat/filebeat.yml")}:/etc/filebeat/filebeat.yml",
-    "${abspath("../python-scripts")}:/opt/python-scripts"
-  ]
-
-  command = ["/usr/sbin/sshd", "-D"]
+  volumes {
+    host_path      = "${abspath("../filebeat/filebeat.yml")}
+    container_path = "/etc/filebeat/filebeat.yml"
+    read_only      = true
+  }
+  # Optional: auto-remove stopped container (uncomment if needed)
+  # must_run = false
+  # restart = "no"
 }
 
-
+# Optional output to display SSH connection info
 output "ssh_connection_command" {
   value = "ssh root@localhost -p 2222"
 }
