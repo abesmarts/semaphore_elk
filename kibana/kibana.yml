@@ -1,0 +1,10 @@
+server.name: "kibana"
+server.host: "0.0.0.0"
+server.port: 5601
+
+# Elasticsearch connection
+elasticsearch.hosts: [ "http://elasticsearch:9200" ]
+
+# UI / usage telemetry (optional)
+telemetry.enabled: false
+monitoring.ui.container.elasticsearch.enabled: true

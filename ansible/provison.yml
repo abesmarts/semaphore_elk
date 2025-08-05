@@ -1,0 +1,54 @@
+---
+- name: Configure Ubuntu container
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install required packages
+      apt:
+        name:
+          - python3
+          - python3-venv
+          - python3-pip
+          - wget
+          - curl
+          - unzip
+          - openssh-server
+        state: present
+
+    - name: Start and enable SSH service
+      service:
+        name: ssh
+        state: started
+        enabled: yes
+
+    - name: Download Google Chrome .deb
+      get_url:
+        url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        dest: /tmp/chrome.deb
+
+    - name: Install Chrome
+      apt:
+        deb: /tmp/chrome.deb
+
+    - name: Create Python virtual environment
+      command: python3 -m venv /opt/venv
+
+    - name: Ensure Desktop directory exists
+      file:
+        path: /root/Desktop
+        state: directory
+        mode: '0755'
+
+    - name: Download and install ChromeDriver to Desktop
+      shell: |
+        LATEST=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
+        wget -N https://chromedriver.storage.googleapis.com/${LATEST}/chromedriver_linux64.zip -P /tmp
+        unzip -o /tmp/chromedriver_linux64.zip -d /root/Desktop
+        chmod +x /root/Desktop/chromedriver
+      args:
+        executable: /bin/bash

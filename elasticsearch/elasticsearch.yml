@@ -1,0 +1,10 @@
+cluster.name: "docker-cluster"
+node.name: "elasticsearch-node-1"
+network.host: 0.0.0.0
+http.port: 9200
+
+# For single-node (no discovery needed)
+discovery.type: single-node
+
+# Disable security (already done via env but added here for clarity)
+xpack.security.enabled: false

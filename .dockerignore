@@ -1,0 +1,42 @@
+# Ignore version control
+.git
+.gitignore
+
+# Semaphore config
+.semaphore/
+
+# Terraform state
+*.tfstate
+*.tfstate.*
+.crash
+.terraform/
+.terraform.lock.hcl
+
+# Ansible cache
+*.retry
+*.log
+*.pyc
+__pycache__/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archives
+*.zip
+*.tar.gz
+*.tgz
+
+# Temporary files
+*.bak
+*.tmp
+*.old
+
+# Ignore Docker-related files
+Dockerfile~

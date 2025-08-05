@@ -1,0 +1,40 @@
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+crash.log
+
+# Ansible
+*.retry
+*.log
+*.pyc
+__pycache__/
+
+# Semaphore
+.semaphore/semaphore.yml
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Archives and backups
+*.zip
+*.tar.gz
+*.tgz
+*.bak
+*.tmp
+*.swp
+*.swo
+
+# IDE/editor folders
+.vscode/
+.idea/
+
+# Docker
+docker/*.tar
+docker/*.img
+docker-compose.override.yml
