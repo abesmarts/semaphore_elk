@@ -40,6 +40,7 @@ services:
       - semaphore_logs:/var/log/semaphore  # Read Semaphore logs
     ports:
       - 5044:5044
+      - 5000:5000
       - 5000:5000/tcp
       - 5000:5000/udp
     depends_on:
@@ -52,7 +53,7 @@ services:
     environment:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     volumes:
-      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro  # Optional
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro  
     depends_on:
       - elasticsearch
 
