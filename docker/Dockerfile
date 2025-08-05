@@ -1,58 +1,44 @@
 FROM ubuntu:latest
 
-# Prevent interactive prompts during package installs
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Update and install core packages including SSH and Python
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-        openssh-server \
-        curl \
-        wget \
-        unzip \
-        sudo \
-        gnupg \
-        software-properties-common \
-        python3 \
-        python3-pip \
-        python3-venv \
-        ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
 
-# Create SSH directories and set root password
-RUN mkdir /var/run/sshd && \
+RUN apt-get update && apt-get install -y \
+    python3 python3-pip \
+    openssh-server \
+    curl wget unzip gnupg cron \
+    software-properties-common \
+    ca-certificates \
+    sudo \
+    xz-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+
+RUN mkdir -p /var/run/sshd /root/Desktop /var/log /opt/python-scripts && \
     echo "root:tofuadmin" | chpasswd && \
-    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -i 's/PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
-# Create Desktop folder for root user
-RUN mkdir -p /root/Desktop
+COPY ../python-scripts /opt/python-scripts
 
-# Create app/log folders
-RUN mkdir -p /opt/python-scripts /etc/filebeat
 
-# Copy Filebeat binary (installed by Semaphore block)
-COPY ../filebeat/filebeat.yml /etc/filebeat/filebeat.yml
+RUN pip3 install --no-cache-dir -r /opt/python-scripts/requirements.txt
 
-# Install Google Chrome
-RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb -O /tmp/chrome.deb && \
+
+RUN wget -q -O /tmp/google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
     apt-get update && \
-    apt-get install -y /tmp/chrome.deb && \
-    rm /tmp/chrome.deb
+    apt-get install -y /tmp/google-chrome.deb && \
+    rm /tmp/google-chrome.deb
 
-# Install matching ChromeDriver and move it to Desktop
+
 RUN CHROME_VERSION=$(google-chrome --version | grep -oP '\d+\.\d+\.\d+') && \
-    CHROMEDRIVER_VERSION=$(curl -s https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION) && \
-    wget -q https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip -O /tmp/chromedriver.zip && \
-    unzip /tmp/chromedriver.zip -d /root/Desktop && \
+    CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION}") && \
+    wget -q -O /tmp/chromedriver.zip https://chromedriver.storage.googleapis.com/${CHROMEDRIVER_VERSION}/chromedriver_linux64.zip && \
+    unzip -o /tmp/chromedriver.zip -d /root/Desktop && \
     chmod +x /root/Desktop/chromedriver && \
     rm /tmp/chromedriver.zip
 
 
+COPY ../filebeat/filebeat.yml /etc/filebeat/filebeat.yml
 
 
-# Expose SSH port
-EXPOSE 22
-
-# Start SSH service and keep container running
 CMD ["/usr/sbin/sshd", "-D"]

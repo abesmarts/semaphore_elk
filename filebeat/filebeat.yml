@@ -5,6 +5,17 @@ filebeat.inputs:
       - /var/log/system_monitor.json
     json.keys_under_root: true
     json.add_error_key: true
+    fields:
+      log_type: "vm_state"
 
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/bot_logger.log
+    json.keys_under_root: true
+    json.add_error_key: true
+    fields:
+      log_type: "bot_data"
+      
 output.logstash:
   hosts: ["logstash:5044"]
