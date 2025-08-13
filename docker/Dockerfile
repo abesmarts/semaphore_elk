@@ -19,12 +19,14 @@ RUN mkdir /var/run/sshd \
  && sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config \
  && sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
 
-# ----------------------------------------------------
-# Install Google Chrome (latest stable)
-# ----------------------------------------------------
-RUN apt-get update && apt-get install -y wget gnupg2 ca-certificates apt-transport-https \
- && wget -q https://dl.google.com/linux/linux_signing_key.pub -O- | gpg --dearmor > /usr/share/keyrings/google-linux-keyring.gpg \
- && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
+
+RUN apt-get update && apt-get install -y \
+    wget gnupg2 ca-certificates apt-transport-https unzip curl \
+    fonts-liberation libu2f-udev libvulkan1 xdg-utils \
+ && mkdir -p /etc/apt/keyrings \
+ && wget -qO- https://dl.google.com/linux/linux_signing_key.pub \
+    | gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg \
+ && echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
     > /etc/apt/sources.list.d/google-chrome.list \
  && apt-get update && apt-get install -y google-chrome-stable \
  && rm -rf /var/lib/apt/lists/*
