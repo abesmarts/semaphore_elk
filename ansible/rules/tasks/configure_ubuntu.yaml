@@ -3,7 +3,7 @@
   hosts: ubuntu_vms
   become: true
   gather_facts: true
-  
+
   vars:
     ubuntu_packages:
       - python3
@@ -40,14 +40,13 @@
       apt:
         name: "{{ ubuntu_packages }}"
         state: present
-        update_cache: true
       tags: ['system']
 
     - name: Ensure SSH service is running
       service:
         name: ssh
         state: started
-        enabled: yes
+        enabled: true
       tags: ['ssh']
     
     - name: Install Python packages
@@ -56,18 +55,6 @@
         state: present
         executable: pip3
       tags: ['python']
-
-    - name: Create /opt/monitoring directories
-      file:
-        path: "{{ item }}"
-        state: directory
-        owner: monitor
-        group: monitor
-        mode: '0755'
-      loop:
-        - /opt/monitoring/scripts
-        - /opt/monitoring/venv
-      tags: ['directories']
 
     - name: Create monitoring user
       user:
@@ -78,20 +65,31 @@
         home: /home/monitor
       tags: ['users']
 
-    - name: Copy python_scripts to VM
-      copy:
-        src: ../python_scripts/
-        dest: /opt/monitoring/scripts/
+    - name: Ensure ownership of /opt/monitoring/scripts
+      file:
+        path: /opt/monitoring/scripts
+        state: directory
         owner: monitor
         group: monitor
         mode: '0755'
-      tags: ['scripts']
+        recurse: true
+      tags: ['directories']
+
+    - name: Create /opt/monitoring/venv directory
+      file:
+        path: /opt/monitoring/venv
+        state: directory
+        owner: monitor
+        group: monitor
+        mode: '0755'
+      tags: ['directories']
 
     - name: Create Python virtual environment
-      command: python3 -m venv /opt/monitoring/venv
-      args: 
+      command:
+        cmd: python3 -m venv /opt/monitoring/venv
         creates: /opt/monitoring/venv/bin/activate
       become: true
+      tags: ['python']
 
     - name: Install required Python packages in venv
       pip:
@@ -99,6 +97,7 @@
         virtualenv: /opt/monitoring/venv
         virtualenv_python: python3
       become: true
+      tags: ['python']
 
     - name: Create log directories
       file:
@@ -167,7 +166,7 @@
         name: "{{ ansible_timezone | default('UTC') }}"
       tags: ['system']
     
-    - name: Enable and start systemd-timesyncd
+    - name: Enable and start systemd-timesyncd (GCP compatible)
       systemd:
         name: systemd-timesyncd
         enabled: true
