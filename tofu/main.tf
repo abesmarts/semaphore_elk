@@ -4,18 +4,7 @@ terraform {
       source  = "hashicorp/google"
       version = "~> 5.0"
     }
-    null = {
-      source  = "hashicorp/null"
-      version = "~> 3.2"
-    }
   }
-
-  # Optional: use GCS for remote state (recommended)
-  backend "gcs" {
-    bucket = "my-terraform-state-bucket"   # <-- CHANGE
-    prefix = "semaphore/vm-state"
-  }
-}
 
 provider "google" {
   project = "my-gcp-project-id"            # <-- CHANGE
