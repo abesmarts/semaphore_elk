@@ -2,20 +2,44 @@ filebeat.inputs:
   - type: log
     enabled: true
     paths:
-      - /var/log/system_monitor.json
+      - /var/log/syslog
+      - /var/log/auth.log
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/vm_state/*.json
+    fields:
+      log_type: vm_state
     json.keys_under_root: true
     json.add_error_key: true
-    fields:
-      log_type: "vm_state"
+    multiline.pattern: '^{'
+    multiline.negate: true
+    multiline.match: after
 
   - type: log
     enabled: true
     paths:
-      - /var/log/bot_logger.log
-    json.keys_under_root: true
-    json.add_error_key: true
+      - /var/log/semaphore/*.log
     fields:
-      log_type: "bot_data"
-      
+      log_type: semaphore
+    json.keys_under_root: false
+
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/bot_logger/*.log
+    fields:
+      log_type: bot_logger
+    json.keys_under_root: false
+
 output.logstash:
-  hosts: ["logstash:5044"]
+  hosts: ["logstash.example.local:5044"]
+  pipeline: ""   
+
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+  - add_fields:
+      target: ''
+      fields:
+        environment: production

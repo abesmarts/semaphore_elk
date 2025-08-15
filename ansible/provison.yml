@@ -1,54 +1,203 @@
 ---
-- name: Configure Ubuntu container
-  hosts: all
-  become: yes
+- name: Configure Selenium/Monitoring VM
+  hosts: selenium_vms
+  become: true
+  vars:
+    vm_state_log_dir: /var/log/vm_state
+    vm_state_file: "{{ vm_state_log_dir }}/vm_state.json"
+    python_venv: /opt/venvs/monitor
+    chromedriver_dir: /usr/local/bin
+    filebeat_conf_src: files/filebeat.yml  # include this in your role/files or project
+    filebeat_service: filebeat
 
   tasks:
-    - name: Update apt cache
+    - name: Apt update
       apt:
         update_cache: yes
+        cache_valid_time: 3600
 
-    - name: Install required packages
+    - name: Install base packages
       apt:
         name:
           - python3
           - python3-venv
           - python3-pip
-          - wget
-          - curl
           - unzip
-          - openssh-server
+          - curl
+          - wget
+          - gnupg
+          - apt-transport-https
+          - ca-certificates
+          - lsb-release
+          - build-essential
         state: present
+        update_cache: yes
 
-    - name: Start and enable SSH service
-      service:
-        name: ssh
-        state: started
-        enabled: yes
-
-    - name: Download Google Chrome .deb
-      get_url:
-        url: https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-        dest: /tmp/chrome.deb
-
-    - name: Install Chrome
-      apt:
-        deb: /tmp/chrome.deb
-
-    - name: Create Python virtual environment
-      command: python3 -m venv /opt/venv
-
-    - name: Ensure Desktop directory exists
+    - name: Ensure vm_state log dir
       file:
-        path: /root/Desktop
+        path: "{{ vm_state_log_dir }}"
         state: directory
+        owner: root
+        group: root
         mode: '0755'
 
-    - name: Download and install ChromeDriver to Desktop
+    # --------------- Chrome + ChromeDriver (auto-match) ----------------
+    - name: Add Google Chrome apt key and repo
+      apt_key:
+        url: https://dl.google.com/linux/linux_signing_key.pub
+        state: present
+
+    - name: Add Google Chrome repo
+      apt_repository:
+        repo: "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main"
+        state: present
+
+    - name: Install google-chrome-stable
+      apt:
+        name: google-chrome-stable
+        state: latest
+        update_cache: yes
+
+    - name: Get installed chrome version
+      command: google-chrome --version
+      register: chrome_version_out
+      changed_when: false
+
+    - name: Set chrome_version fact
+      set_fact:
+        chrome_version: "{{ (chrome_version_out.stdout | regex_search('([0-9]+\\.[0-9]+\\.[0-9]+)')) }}"
+
+    - name: Lookup ChromeDriver matching version (uses official chromedriver API)
       shell: |
-        LATEST=$(curl -sS https://chromedriver.storage.googleapis.com/LATEST_RELEASE)
-        wget -N https://chromedriver.storage.googleapis.com/${LATEST}/chromedriver_linux64.zip -P /tmp
-        unzip -o /tmp/chromedriver_linux64.zip -d /root/Desktop
-        chmod +x /root/Desktop/chromedriver
+        MAJOR=$(echo "{{ chrome_version }}" | cut -d. -f1)
+        # Query latest chromedriver release for major version
+        LATEST=$(curl -fsSL https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$MAJOR)
+        echo $LATEST
+      register: chromedriver_version
+      changed_when: false
+
+    - name: Download chromedriver
+      get_url:
+        url: "https://chromedriver.storage.googleapis.com/{{ chromedriver_version.stdout }}/chromedriver_linux64.zip"
+        dest: /tmp/chromedriver_linux64.zip
+        mode: '0644'
+
+    - name: Unzip chromedriver
+      unarchive:
+        src: /tmp/chromedriver_linux64.zip
+        dest: /tmp/
+        remote_src: yes
+
+    - name: Move chromedriver to location
+      copy:
+        src: /tmp/chromedriver
+        dest: "{{ chromedriver_dir }}/chromedriver"
+        mode: '0755'
+      remote_src: yes
+
+    # --------------- Python venv & monitor script ----------------
+    - name: Create Python virtualenv dir
+      file:
+        path: "{{ python_venv }}"
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: Create venv
+      command: python3 -m venv {{ python_venv }}
       args:
-        executable: /bin/bash
+        creates: "{{ python_venv }}/bin/activate"
+
+    - name: Install python packages (pip)
+      pip:
+        virtualenv: "{{ python_venv }}"
+        name:
+          - psutil
+          - requests
+          - python-json-logger
+          - selenium
+        state: present
+
+    - name: Deploy system_monitor.py
+      copy:
+        content: |
+          #!/usr/bin/env python3
+          import json, psutil, time, socket
+          data = {
+            "host": socket.gethostname(),
+            "timestamp": int(time.time()),
+            "cpu_percent": psutil.cpu_percent(interval=1),
+            "mem": psutil.virtual_memory()._asdict(),
+            "disk": psutil.disk_usage('/')._asdict()
+          }
+          with open("{{ vm_state_file }}", "a") as f:
+            f.write(json.dumps(data) + "\n")
+        dest: /usr/local/bin/system_monitor.py
+        mode: '0755'
+
+    - name: Create systemd service for monitor (runs once via timer)
+      copy:
+        content: |
+          [Unit]
+          Description=VM State Monitor
+          After=network.target
+
+          [Service]
+          Type=oneshot
+          ExecStart={{ python_venv }}/bin/python /usr/local/bin/system_monitor.py
+        dest: /etc/systemd/system/vm-state-monitor.service
+        mode: '0644'
+
+    - name: Create systemd timer to run hourly
+      copy:
+        content: |
+          [Unit]
+          Description=Hourly VM State Monitor
+
+          [Timer]
+          OnCalendar=hourly
+          Persistent=true
+
+          [Install]
+          WantedBy=timers.target
+        dest: /etc/systemd/system/vm-state-monitor.timer
+        mode: '0644'
+
+    - name: Reload systemd
+      command: systemctl daemon-reload
+
+    - name: Enable and start timer
+      systemd:
+        name: vm-state-monitor.timer
+        enabled: yes
+        state: started
+
+    # --------------- Filebeat install and config ----------------
+    - name: Install Filebeat (Elastic APT)
+      apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+
+    - name: Add Elastic apt repo
+      apt_repository:
+        repo: "deb https://artifacts.elastic.co/packages/8.x/apt stable main"
+        state: present
+
+    - name: Install filebeat
+      apt:
+        name: filebeat
+        state: latest
+        update_cache: yes
+
+    - name: Deploy filebeat config
+      template:
+        src: filebeat.yml.j2
+        dest: /etc/filebeat/filebeat.yml
+        mode: '0644'
+
+    - name: Enable and start filebeat
+      systemd:
+        name: filebeat
+        enabled: yes
+        state: restarted
